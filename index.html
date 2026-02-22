@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5">
+    <title>公共文件下载 · 目录浏览</title>
+    <!-- Font Awesome 6 (免费图标库) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(145deg, #f1f5f9 0%, #e6edf5 100%);
+            min-height: 100vh;
+            padding: 2rem 1.5rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container {
+            max-width: 1280px;
+            width: 100%;
+        }
+
+        /* 头部区域 */
+        .header {
+            margin-bottom: 2.5rem;
+            text-align: left;
+        }
+
+        .header h1 {
+            font-size: 2.4rem;
+            font-weight: 600;
+            letter-spacing: -0.02em;
+            background: linear-gradient(135deg, #0f172a, #334155);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .header h1 i {
+            background: #2563eb;
+            background: linear-gradient(145deg, #2563eb, #1e40af);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-size: 2.2rem;
+        }
+
+        .path-hint {
+            margin-top: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(4px);
+            padding: 0.6rem 1.2rem;
+            border-radius: 60px;
+            width: fit-content;
+            border: 1px solid rgba(255,255,255,0.6);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+            color: #1e293b;
+            font-size: 0.95rem;
+        }
+
+        .path-hint i {
+            color: #475569;
+            font-size: 1rem;
+        }
+
+        .path-hint code {
+            background: #e2e8f0;
+            padding: 0.2rem 0.8rem;
+            border-radius: 40px;
+            font-family: 'SF Mono', 'Fira Code', monospace;
+            font-weight: 500;
+            color: #0f172a;
+            border: 1px solid #cbd5e1;
+        }
+
+        /* 网格布局 */
+        .file-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin: 2.5rem 0 3rem;
+        }
+
+        /* 卡片设计 */
+        .file-card {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+            border-radius: 28px;
+            padding: 1.4rem 1.4rem 1.2rem 1.4rem;
+            box-shadow: 0 10px 25px -8px rgba(0, 0, 0, 0.1),
+                        0 0 0 1px rgba(255,255,255,0.7) inset,
+                        0 0 0 1px rgba(0,0,0,0.02);
+            transition: transform 0.2s ease, box-shadow 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid rgba(255,255,255,0.5);
+        }
+
+        .file-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 24px 38px -12px rgba(0, 35, 70, 0.25),
+                        0 0 0 1px rgba(255,255,255,0.9) inset;
+            background: rgba(255,255,255,0.9);
+        }
+
+        /* 卡片内上半部分 (图标 + 信息) */
+        .card-row {
+            display: flex;
+            gap: 1rem;
+            align-items: flex-start;
+        }
+
+        /* 图标容器 */
+        .icon {
+            font-size: 2.4rem;
+            line-height: 1;
+            min-width: 2.8rem;
+            text-align: center;
+            color: #2c3e50;
+            transition: color 0.15s;
+            display: flex;
+            justify-content: center;
+        }
+
+        /* 给不同文件类型微妙的颜色暗示 (通过JS内联或这里统一) 我们统一用深蓝灰，留一点个性化空间 */
+        .icon i {
+            filter: drop-shadow(0 4px 4px rgba(0,20,40,0.1));
+        }
+
+        /* 信息区域 (右侧) */
+        .info {
+            flex: 1;
+            min-width: 0;  /* 防止溢出 */
+        }
+
+        .file-name {
+            font-weight: 600;
+            font-size: 1.1rem;
+            line-height: 1.4;
+            color: #0b1e33;
+            text-decoration: none;
+            display: inline-block;
+            margin-bottom: 0.2rem;
+            word-break: break-word;
+            transition: color 0.15s;
+            border-bottom: 1px dotted transparent;
+        }
+
+        .file-name:hover {
+            color: #1d4ed8;
+            border-bottom-color: #1d4ed8;
+        }
+
+        .file-meta {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 0.3rem 0.5rem;
+            font-size: 0.85rem;
+            color: #475569;
+            margin-top: 0.25rem;
+        }
+
+        .file-meta span {
+            background: rgba(203, 213, 225, 0.3);
+            padding: 0.15rem 0.5rem;
+            border-radius: 30px;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.2rem;
+        }
+
+        .file-meta .dot {
+            background: transparent;
+            padding: 0;
+            color: #94a3b8;
+            font-weight: 600;
+        }
+
+        /* 下载按钮区域 */
+        .download-wrap {
+            margin-top: 1.2rem;
+            display: flex;
+            justify-content: flex-end;
+            border-top: 1px dashed #d1d9e6;
+            padding-top: 0.9rem;
+        }
+
+        .download-btn {
+            background: #ffffff;
+            border: 1px solid #cbd5e1;
+            color: #1e293b;
+            padding: 0.5rem 1.2rem;
+            border-radius: 40px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.6rem;
+            text-decoration: none;
+            transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+            cursor: pointer;
+        }
+
+        .download-btn i {
+            font-size: 0.9rem;
+            color: #2563eb;
+        }
+
+        .download-btn:hover {
+            background: #f8fafc;
+            border-color: #2563eb;
+            box-shadow: 0 8px 14px -8px #2563eb60;
+            color: #0f172a;
+        }
+
+        .download-btn:hover i {
+            color: #1d4ed8;
+        }
+
+        /* 页脚 */
+        .footer-note {
+            margin-top: 2rem;
+            font-size: 0.9rem;
+            color: #4a5a72;
+            text-align: center;
+            border-top: 1px solid rgba(148, 163, 184, 0.3);
+            padding-top: 2rem;
+            display: flex;
+            justify-content: center;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .footer-note span {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(203, 213, 225, 0.4);
+            padding: 0.3rem 1rem;
+            border-radius: 40px;
+            backdrop-filter: blur(2px);
+        }
+
+        /* 空状态 / 加载提示 (基本用不到) */
+        .loading-placeholder {
+            text-align: center;
+            padding: 3rem;
+            color: #62748c;
+        }
+
+        /* 小屏优化 */
+        @media (max-width: 480px) {
+            body { padding: 1.5rem 1rem; }
+            .header h1 { font-size: 1.8rem; }
+            .card-row { gap: 0.8rem; }
+            .icon { font-size: 2rem; min-width: 2.4rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 头部 -->
+        <div class="header">
+            <h1>
+                <i class="fa-solid fa-cloud-arrow-down"></i> 
+                公共文件下载
+            </h1>
+            <div class="path-hint">
+                <i class="fa-regular fa-folder-open"></i>
+                文件目录 <code>./public/</code> 
+                <i class="fa-regular fa-circle-check" style="color:#16a34a;"></i>
+                <span style="font-size:0.85rem; opacity:0.8;">相对路径，点击即下载</span>
+            </div>
+        </div>
+
+        <!-- 文件网格容器 (由JavaScript动态渲染) -->
+        <div id="fileGrid" class="file-grid">
+            <!-- JS 会动态插入卡片，此处可保留一个轻提示（如果JS未加载或极慢） -->
+            <div class="loading-placeholder" style="grid-column:1/-1;">
+                <i class="fa-solid fa-spinner fa-pulse"></i> 准备文件列表...
+            </div>
+        </div>
+
+        <!-- 页脚信息 -->
+        <div class="footer-note">
+            <span><i class="fa-regular fa-circle-question"></i> 文件直接存储在 ./public/ 下</span>
+            <span><i class="fa-regular fa-clock"></i> 列表更新时间 2025-02-22</span>
+            <span><i class="fa-solid fa-shield"></i> 同源下载 · 自动强制下载</span>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            // 转义HTML特殊字符 (防止文件名中出现<>&等影响结构)
+            function escapeHtml(unsafe) {
+                return unsafe.replace(/[&<>"]/g, function(m) {
+                    if (m === '&') return '&amp;';
+                    if (m === '<') return '&lt;';
+                    if (m === '>') return '&gt;';
+                    if (m === '"') return '&quot;';
+                    return m;
+                });
+            }
+
+            // 根据文件名返回对应的FontAwesome图标类 (solid风格)
+            function getIconClass(filename) {
+                const ext = filename.split('.').pop().toLowerCase();
+                const iconMap = {
+                    // 文档
+                    'pdf': 'fa-file-pdf',
+                    'doc': 'fa-file-word', 'docx': 'fa-file-word',
+                    'xls': 'fa-file-excel', 'xlsx': 'fa-file-excel', 'csv': 'fa-file-csv',
+                    'ppt': 'fa-file-powerpoint', 'pptx': 'fa-file-powerpoint',
+                    'txt': 'fa-file-lines', 'md': 'fa-file-lines',
+                    // 图片
+                    'jpg': 'fa-file-image', 'jpeg': 'fa-file-image', 'png': 'fa-file-image',
+                    'gif': 'fa-file-image', 'bmp': 'fa-file-image', 'svg': 'fa-file-image',
+                    'webp': 'fa-file-image',
+                    // 压缩包
+                    'zip': 'fa-file-archive', 'rar': 'fa-file-archive', '7z': 'fa-file-archive',
+                    'tar': 'fa-file-archive', 'gz': 'fa-file-archive', 'bz2': 'fa-file-archive',
+                    // 可执行/代码
+                    'exe': 'fa-file-code', 'msi': 'fa-file-code', 'sh': 'fa-file-code',
+                    'bat': 'fa-file-code', 'bin': 'fa-file-code', 'app': 'fa-file-code',
+                    // 视频/音频
+                    'mp4': 'fa-file-video', 'mov': 'fa-file-video', 'avi': 'fa-file-video',
+                    'mkv': 'fa-file-video', 'mp3': 'fa-file-audio', 'wav': 'fa-file-audio',
+                    'flac': 'fa-file-audio',
+                    // 其他常见
+                    'iso': 'fa-file-circle-plus', 'dmg': 'fa-file-circle-plus',
+                };
+                // 默认图标
+                return iconMap[ext] || 'fa-file';
+            }
+
+            // 文件数据: 名称、大小、修改日期 (示例文件，完全符合 ./public 目录)
+            // 注意：文件名包含中英文混合，展示编码兼容性。
+            const files = [
+                { name: "诗歌本_5.5.apk", size: "2.8 MB", date: "2025-02-15" },
+            ];
+
+            const gridContainer = document.getElementById('fileGrid');
+            if (!gridContainer) return;
+
+            // 清空占位符
+            gridContainer.innerHTML = '';
+
+            // 循环创建卡片
+            files.forEach(file => {
+                // 构建下载链接 (对文件名进行URI编码，保证空格/中文正确)
+                const encodedFileName = encodeURIComponent(file.name);
+                const href = `./public/${encodedFileName}`;
+
+                // 获取文件图标类
+                const iconClass = getIconClass(file.name);
+
+                // 转义文件名(用于HTML显示和download属性)
+                const escapedName = escapeHtml(file.name);
+                // 注意download属性直接用原始文件名(未转义，但放在属性里需要适当处理引号，这里使用单引号包裹属性值，并确保内部引号已转义)
+                // 为了安全，将文件名中的双引号转义，但文件名极少含引号。我们用escapeHtml处理过的版本放在属性里，但要注意单引号。
+                // 简单起见，download属性值也用escapeHtml处理，并确保外层使用双引号。
+                // 我们构建HTML字符串，所以需要对属性进行额外转义(将双引号转成&quot;)。
+                // 上面escapeHtml已转换双引号为&quot;，所以可以直接嵌入。
+                const downloadAttr = escapedName;  // 已转义双引号
+
+                // 构建卡片HTML (使用双引号包裹属性)
+                const cardHTML = `
+                    <div class="file-card">
+                        <div class="card-row">
+                            <div class="icon">
+                                <i class="fa-solid ${iconClass}"></i>
+                            </div>
+                            <div class="info">
+                                <a href="${href}" download="${downloadAttr}" class="file-name" title="${downloadAttr}">${escapedName}</a>
+                                <div class="file-meta">
+                                    <span><i class="fa-regular fa-hard-drive"></i> ${file.size}</span>
+                                    <span class="dot">•</span>
+                                    <span><i class="fa-regular fa-calendar"></i> ${file.date}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="download-wrap">
+                            <a href="${href}" download="${downloadAttr}" class="download-btn">
+                                <i class="fa-solid fa-download"></i> 下载文件
+                            </a>
+                        </div>
+                    </div>
+                `;
+
+                // 插入卡片 (使用insertAdjacentHTML性能好，且不影响已存在的元素)
+                gridContainer.insertAdjacentHTML('beforeend', cardHTML);
+            });
+
+            // 可选：如果没有文件，显示提示 (但files有数据)
+            if (files.length === 0) {
+                gridContainer.innerHTML = '<div class="loading-placeholder" style="grid-column:1/-1;"><i class="fa-regular fa-folder-open"></i> 暂无文件</div>';
+            }
+
+            // 给所有下载链接增加额外的健壮处理：如果浏览器不支持download属性，至少是新页面打开 (但都是同域)
+            // 没什么需要额外做的了。
+        })();
+    </script>
+
+    <!-- 确保在不支持js或网速慢时能看到内容，但我们已经内嵌占位符 -->
+    <noscript>
+        <div style="background: #fee2e2; padding: 2rem; border-radius: 2rem; text-align: center; margin-top: 2rem;">
+            <i class="fa-solid fa-triangle-exclamation"></i> 您的浏览器未启用 JavaScript，但您依然可以手动访问文件：<br>
+            <code>./public/</code> 目录下的文件列表 (示例文件名: annual-report.pdf, setup.exe ...)
+        </div>
+    </noscript>
+</body>
+</html>
