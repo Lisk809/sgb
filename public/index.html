@@ -283,7 +283,7 @@
             </h1>
             <div class="path-hint">
                 <i class="fa-regular fa-folder-open"></i>
-                文件目录 <code>./public/</code> 
+                文件目录 <code>./</code> 
                 <i class="fa-regular fa-circle-check" style="color:#16a34a;"></i>
                 <span style="font-size:0.85rem; opacity:0.8;">相对路径，点击即下载</span>
             </div>
@@ -365,7 +365,7 @@
             files.forEach(file => {
                 // 构建下载链接 (对文件名进行URI编码，保证空格/中文正确)
                 const encodedFileName = encodeURIComponent(file.name);
-                const href = `./public/${encodedFileName}`;
+                const href = `./${encodedFileName}`;
 
                 // 获取文件图标类
                 const iconClass = getIconClass(file.name);
